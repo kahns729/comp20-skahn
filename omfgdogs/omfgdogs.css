@@ -1,0 +1,27 @@
+body {
+	background-image:url('omfgdogs.gif');
+}
+
+
+a {
+	position:absolute;
+	bottom:0pt;
+	right:0pt;
+	font-size: 24px;
+	font-family: "Comic Sans MS";
+	color:red;
+}
+
+h1 {
+	visibility:hidden;
+}
+
+@media (max-width: 992px) {
+	h1 {
+		visibility:visible;
+	}
+
+	body {
+		background-image:none;
+	}
+} 
