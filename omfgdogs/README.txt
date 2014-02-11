@@ -1,0 +1,6 @@
+README for omfgdogs by Seth Kahn.
+Credit to www.omfgdogs.com for the original website.
+
+My implementation of omfgdogs was done with HTML and CSS. HTML, aside from setting a basic head-body structure, was only to set the title of the webpage, display the "No OMFGDOGS for you!" message, play the audio loop, and provide the link at the bottom right of the page. 
+
+The remainder of the "functionality" of the website is in the included stylesheet. The stylesheet set the background of the body to the omfgdogs.gif image to provide the colors and dogs flashing and running all over the page. It also allowed for the "No OMFGDOGS for you!" message be shown and the background to be hidden only when the display width is below 992 pixels, and allows the link to only be shown when the display width is above 992 pixels. In other words, the stylesheet facilitated the responsive design requirements of the website as stated in the assignment. The stylesheet also formatted the font size, color, and family of the link to the original website.
