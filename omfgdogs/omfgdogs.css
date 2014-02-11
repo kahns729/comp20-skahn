@@ -4,6 +4,7 @@ body {
 
 
 a {
+	visibility:hidden;
 	position:absolute;
 	bottom:0pt;
 	right:0pt;
@@ -25,3 +26,9 @@ h1 {
 		background-image:none;
 	}
 } 
+
+@media (min-width: 992px){
+	a{
+		visibility:visible;
+	}
+}
