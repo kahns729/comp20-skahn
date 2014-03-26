@@ -5,26 +5,40 @@
 
 <head>
 	<script>
+	function init(){
+		for (key in localStorage){
+			var snode = document.createElement("p");
+			snode.textContent = localStorage[key];
+			document.getElementById('status').insertBefore(snode,
+			document.getElementById('status').firstChild);
+		}
+	}
 	function addStatus(message){
 		var snode = document.createElement("p");
 		today = new Date();
 		//string comprised of date and message
 		var status = "";
+		minutes = today.getMinutes();
+		var minString = "" + minutes;
+		if (minString.length == 1){
+			minString = "0" + minString;
+		}
 		status = status + (today.getMonth() + 1)
 					+"/" +today.getDate()
 					+"/" +today.getFullYear()
 					+" " +today.getHours()
-					+":" +today.getMinutes()
+					+":" +minString
 					+" - " +message;
 		snode.textContent = status;
 		document.getElementById('status').insertBefore(snode,
 			document.getElementById('status').firstChild);
+		localStorage[new Date().getTime()] = status;
 	}
 	</script>
 <title>Fecesbook</title>
 </head>
 
-<body>
+<body onload=init()>
 	<h1>Fecebook</h1>
 	<div id="nav">
 		<ul>
