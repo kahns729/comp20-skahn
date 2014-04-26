@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>2048 Game Center Security Report</title>
+</head>
+<body>
+	<h2>Security Assessment of 2048 Game Center</h1>
+	<p>By <a href="http://kahns729.github.io">Seth Kahn</a> on 4/25/2014</p>
+	<!--Introduction-->
+	<h2>Introduction</h2>
+	<hr>
+	<p>The purpose of this assignment is to test the security of an application that handles data related to high scores in the game 2048. As instructed, this security evaluation is of the solution to assignment 4 produced by Ming Chow, rather than by my partner, who did not complete assignment 4 by the date of this assessment.</p>
+	<p>The purpose of assignment 4, and of the application that is being evaluated, is an API to handle sent scores from 2048 and to accept requests for scores for a particular user. One functionality is allowing clients to use the API to post their own 2048 data to the server. This data is represented by a username, a final score, and a grid. A time stamp is also added by the server to the posted data. Any post not containing all of these fields exactly (by name "username", "score", and "grid") are not processed by the server. The main security concern that arises with this functionality are that the data may not be validated on the server side, and malicious post parameters (i.e. cross domain scripts) could be stored in the server. Another function of the application is to accept requests for score data for a particular user, requiring that a username be provided. </p>
+	<!--Methodology-->
+	<h2>Methodology</h2>
+	<hr>
+	<p>Testing for security vulnerabilities was done largely black-box, using curl in a command-line environment (in particular, terminal) to exploit security vulnerabilities. Vulnerabilities were also found with glass-box testing, i.e. searching through the code itself to identify potential weaknesses in its integrity. No code within the application written by Ming was changed, as is ideal when testing for security vulnerabilities.</p>
+	<!--Abstract of Findings-->
+	<h2>Abstract of Findings</h2>
+	<hr>
+	<p>As is often the case, the most severe problem with the application lies with placing too much trust in the application's clients. Not validating and asserting that input be correct (in particular, input by clients submitting scores to the application) results in the ability for malicious users to inject bad code into the application and crash, alter, or render unusable the application in question. Issues also arise with access. In particular, not limiting the amount of uses of the API that a user can utilize could lead to malicious users overloading the server and the database, causing the application to crash and potentially costing a lot to the developer. Additionally, leaving the database that the application uses as essentially open to access by anyone is a serious security issue. More security measures should be exercised in protecting the integrity of the application's back-end database.
+	<!--Issues Found-->
+	<h2>Issues Found</h2>
+	<hr>
+	<h3>1. Cross-Site Scripting in the /submit.json API</h3>
+	<ul>
+	<li><strong>Issue:</strong> Users of the /submit.json API can input malicious values for the parameters that the post request takes. This allows for cross-site scripting.</li>
+	<li><strong>Location:</strong> The /submit.json post API.</li>
+	<li><strong>Severity of issue:</strong> Very high.</li>
+	<li><strong>Description of issue:</strong> The injection of malicious code (often within script tags) to be run is made possible by this security overlook. This malicious input is stored in the database, and run when data from the database is retrieved.</li>
+	<li><strong>Proof of vulnerability:</strong>
+		</br>
+		<img src = "screenshots/cat.png" width=520px height=320px></img>
+		<img src = "screenshots/gangnamXSS.png" width=520px height=320px></img>
+	</li>
+	<li><strong>Resolution:</strong> This issue could be resolved in a number of ways. One way is by checking the user's input as it is processed, and if the input does not follow the desired form, not input it into the database. Another way is to ensure that no &lt or &gt are input into the database by escaping the input. This can be done in a few ways. One way, using Node.js, is using the validator. i.e. </br>
+		<code>var validator = require('validator');</code></br>... and later, in the /submit.json API...</br>
+		<code>validator.escape(someInput);</code></li>
+	</ul>
+	<h3>2. Database Storage Limit and No Submit Restriction</h3>
+	<ul>
+	<li><strong>Issue:</strong> Malicious users could write scripts (or manually input data) to overload the Mongo database utilized by this application on Heroku.</li>
+	<li><strong>Location:</strong> Database, but more specifically in the /submit.json API.</li>
+	<li><strong>Severity of issue:</strong> Medium</li>
+	<li><strong>Description of issue:</strong> The application allows cross origin resource sharing for the /submit.json API, but does not impose any restrictions on how many times a particular user submits data, and for that matter has no mechanism for restricting access to the API. Using the following code:</br>
+		<code>response.header("Access-Control-Allow-Origin", "*");</code></br>
+		allows ANYONE to access this API, without any need for a key. There is no code to restrict amount of submissions per user per unit of time, so a user could simply submit hundreds/thousands/many more POST requests and keep adding to the database. The issue here is that the app is hosted on Heroku, and Heroku limits how much data can be stored in a Mongo database hosted on their servers. This limit is dependent on the plan, but no plan has unlimited data storage, and I would assume this application uses the free plan, which cuts users off after using 496 MB. If this limit is exceeded (or whatever limit it may be), the person hosting the app (in this case Ming) could end up paying money or having his application crash because the database is overloaded. 
+	</li>
+	<li><strong>Proof of vulnerability:</strong>
+	</br>
+	<img src = "screenshots/Database_Overload.png" width=520px height=320px></img>
+	<img src = "screenshots/MongoLimit.png" width=520px height=320px></img>
+	<li><strong>Resolution:</strong> One resolution is restricting the number of uses of the /submit.json API on a user-by-user basis, probably by IP address but potentially by API key, which is not a system yet in use. The former method would restrict number of POST requests by IP address per hour, while the latter would establish an API key system, where secret API keys would be needed to use the API, and allow users with that API key only to POST a certain, limited amount of data per hour. These solutions prevent scripts from posting arbitrarily large amounts of data to the server. Additionally, if Ming finds that many people use this API and his database gets too full, he could enforce a limit of entries to keep track of. For instance, his database could record only the top 100 scores for each user, or only the top 10000 scores for all users. There are a number of ways these limits could be implemented.</li>
+	</ul>
+	<h3>3. MongoDB Authentication</h3>
+	<ul>
+	<li><strong>Issue:</strong> Access to the Mongo database used for this application does not require any authentication, as indicated by the use of the database in the app.js file included in the project (though most users cannot see this file, my inspection of the file made it clear that the Mongo database used for this application was not secure).</li>
+	<li><strong>Location:</strong> Database</li>
+	<li><strong>Severity of issue:</strong> Medium-High</li>
+	<li><strong>Description of issue:</strong>Mongo databases do not, by default, require authentication for access. Such authentication is a preference used by the developer that must be turned on. Although I cannot access the Heroku account itself to look at the database in question, there is no evidence in the app.js file of this application that any such authentication is required. This means that, potentially, any user can directly change the database without needing any login credentials. This is a serious security concern. The database could be wiped, filled with dummy data, or injected with cross-server scripts. A user with malicious intent could seriously corrupt the whole application.</li>
+	<li><strong>Proof of vulnerability:</strong>
+		</br>
+		<img src = "screenshots/DBauthentication.png" width=520px height=320px></img>
+	</li>
+	<li><strong>Resolution:</strong> To resolve this issue, Mongo authentication should be activated. Documentation on how precisely to do this can be found <a href="http://docs.mongodb.org/manual/tutorial/enable-authentication/">here</a>. The administrative user for this database would most likely be the only necessary user, and would be used in this application to access the database using authentication credentials. Simply adding this layer of protection would make it impossible (assuming, of course, that the user credentials are secure, which is another security issue in itself) for other users to access and alter the database. Such a small step should always be taken to make a database secure, and is especially simple when only one client needs to directly access the database, and every other client simply accesses it through a built-in API that runs through the application.</li>
+	</ul>
+	<h2>Conclusion</h2>
+	<hr>
+	<p>There are severe security concerns with the current state of this application. More validation and escaping of input should be performed to prevent the injection of malicious scripts. This is the most pressing concern. Malicious scripts could affect users of the '/' directory of this application (i.e. users who use the Game Center high scores screen rather than the API). It can also affect users of the API who request scores. User input should never be trusted, and here leads to significant hacking potential and should immediately be fixed, which would not be very difficult using node.js modules to escape input data.</p>
+	<p>However, these cross-site scripting issues and user input validation are not the only concerns. There are also concerns regarding the database and its integrity. Often, websites use API's that restrict access, usually by period of time, to their resources. Here, the lack of such restrictions and the lack of database protection can lead to corruption of the database or overload of the server/database to crash the application. Aside from hacky cross-side scripting attacks, simple user-validation and restriction of access should be exercised, as the luck of such protection leaves the application open for security breaches.</p>
+	<p>The cost of fixing these issues is almost certainly non-monetary. The only monetary consideration is upgrading the Heroku database to hold larger data, though such a change is not necessary. Either way, fixing these security issues is not an option, but rather a necessity in a web where security measures are mandatory nuissances and attacks are inevitable.</p>
+
+</body>
+</html>
